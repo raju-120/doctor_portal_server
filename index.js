@@ -23,13 +23,30 @@ const client = new MongoClient(uri, {
 async function run(){
     try{
         const appointmentOptionCollection = client.db('doctorsPortal').collection('appointmentOptions');
+        const bookingCollection = client.db('doctorsPortal').collection('bookings');
         
         app.get('/appointmentOptions', async(req, res) =>{
             
             const query = {};
-            const options = await appointmentOptionCollection.find(query).toArray();
+            const cursor = appointmentOptionCollection.find(query);
+            const options = await cursor.toArray();
             res.send(options);
             //console.log(options)
+        });
+
+        /*
+            *API Naming Conventions
+            *app.get('/bookings')
+            *app.get('/bookings/:id')
+            *app.post('bookings')
+            *app.patch('/bookings/id')
+            *app.delete('bookings/:id') 
+        */
+        app.post('/bookings', async(req, res) =>{
+            const booking = req.body;
+            console.log(booking);
+            const result = await bookingCollection.insertOne(booking);
+            res.send(result);
         })
     }
     finally{
