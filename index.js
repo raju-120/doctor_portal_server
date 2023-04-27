@@ -44,6 +44,7 @@ async function run(){
         const appointmentOptionCollection = client.db('doctorsPortal').collection('appointmentOptions');
         const bookingCollection = client.db('doctorsPortal').collection('bookings');
         const usersCollection = client.db('doctorsPortal').collection('users');
+        const doctorsCollection = client.db('doctorsPortal').collection('doctors');
         
         //use Aggregate to query multiple collection & then merge data
         app.get('/appointmentOptions', async(req, res) =>{
@@ -65,14 +66,6 @@ async function run(){
             res.send(options);
         });
 
-        /*
-            *API Naming Conventions
-            *app.get('/bookings')
-            *app.get('/bookings/:id')
-            *app.post('bookings')
-            *app.patch('/bookings/id')
-            *app.delete('bookings/:id') 
-        */
 
         // Advanced formula for backend
         /* app.get('/v2/appointment', async (req,res)=>{
@@ -119,6 +112,21 @@ async function run(){
             ]).toArray();
             res.send(options);
         }) */
+
+        app.get('/appointmentSpecialty', async(req, res) =>{
+            const query = {};
+            const result = await appointmentOptionCollection.find(query).project({name: 1}).toArray();
+            res.send(result);
+        })
+        
+        /*
+            *API Naming Conventions
+            *app.get('/bookings')
+            *app.get('/bookings/:id')
+            *app.post('bookings')
+            *app.patch('/bookings/id')
+            *app.delete('bookings/:id') 
+        */
 
         app.get('/bookings', verifyJWT, async(req, res) =>{
             const email = req.query.email;
@@ -201,6 +209,17 @@ async function run(){
             }
             const result =  await usersCollection.updateOne(filter, updatedDoc, options);
             res.send(result);
+        })
+
+        app.post('/doctors', async (req, res) =>{
+            const doctor = req.body;
+            const result = await doctorsCollection.insertOne(doctor);
+            res.send(result);
+        });
+        app.get('/doctors', async (req, res) =>{
+            const query = {};
+            const doctor = await doctorsCollection.find(query).toArray();
+            res.send(doctor);
         })
     }
     finally{
