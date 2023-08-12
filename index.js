@@ -288,20 +288,20 @@ async function run(){
 
 
         //Doctors Section
-        app.get('/doctors',  async (req, res) => {
+        app.get('/doctors',verifyJWT,verifyAdmin,  async (req, res) => {
             const query = {};
             const doctors = await doctorsCollection.find(query).toArray();
             console.log(doctors);
             res.send(doctors);
         })
 
-        app.post('/doctors',  async (req, res) => {
+        app.post('/doctors',verifyJWT,verifyAdmin,  async (req, res) => {
             const doctor = req.body;
             const result = await doctorsCollection.insertOne(doctor);
             res.send(result);
         });
 
-        app.delete('/doctors/:id', async (req, res) => {
+        app.delete('/doctors/:id',verifyJWT,verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await doctorsCollection.deleteOne(filter);
