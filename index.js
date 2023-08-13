@@ -2,6 +2,7 @@ const { MongoClient, ServerApiVersion, ObjectId, Transaction } = require('mongod
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const nodemailer = require("nodemailer");
 require('dotenv').config(); 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
@@ -23,6 +24,42 @@ const client = new MongoClient(uri, {
       deprecationErrors: true,
     }
   });
+
+function sendBookingEmail(booking){
+    const {email,treatment,appointmentDate,slot} = booking;
+
+    
+    let transporter = nodemailer.createTransport({
+        host: 'smtp.sendgrid.net',
+        port: 587,
+        auth: {
+            user: process.env.SENDGRID_USER,
+            pass: process.env.SENDGRID_API_KEY
+        }
+     })
+
+     transporter.sendMail({
+        from: "ashfaqraju27@gmail.com", // verified sender email
+        to: `${email}`, // recipient email
+        subject: `Your appointment for ${treatment} is confirm`, // Subject line
+        text: "Email Body", // plain text body
+        html: `
+        <h3 className="text-lg text-emerald-400">Your appointment is confirmed.</h3>
+        <div>
+            <p>Your appointment for treatment: ${treatment}</p>
+            <p>Please visit on us at ${appointmentDate} at ${slot}</p>
+            <p>Thanks for using Doctor's Portal.</p>
+        </div>
+        `, // html body
+      }, function(error, info){
+        if (error) {
+          console.log(error);
+        } else {
+          console.log('Email sent: ' + info.response);
+        }
+      });
+      console.log(transporter.sendMail);
+}
 
 function verifyJWT(req, res, next){
     
@@ -147,12 +184,12 @@ async function run(){
             *app.delete('bookings/:id') 
         */
 
-        app.get('/bookings', verifyJWT, async(req, res) =>{
+        app.get('/bookings', async(req, res) =>{
             const email = req.query.email;
-            const decodedEmail = req.decoded.email;
+            /* const decodedEmail = req.decoded.email;
             if(email !== decodedEmail){
                 return res.status(403).send({message: 'forbidden access'})
-            }
+            } */
             const query = {email: email};
             const bookings = await bookingCollection.find(query).toArray();
             res.send(bookings); 
@@ -182,6 +219,9 @@ async function run(){
             }
 
             const result = await bookingCollection.insertOne(booking);
+
+            //send email about appointment confirmation
+            sendBookingEmail(booking);
             res.send(result);
         });
 
@@ -251,7 +291,7 @@ async function run(){
             res.send(result);
         });
 
-        app.put('/users/admin/:id',verifyJWT, async(req, res) =>{
+        app.put('/users/admin/:id', async(req, res) =>{
             const decodedEmail = req.decoded.email;
             const query = {email: decodedEmail}
             const user = await usersCollection.findOne(query);
@@ -288,20 +328,20 @@ async function run(){
 
 
         //Doctors Section
-        app.get('/doctors',verifyJWT,verifyAdmin,  async (req, res) => {
+        app.get('/doctors',  async (req, res) => {
             const query = {};
             const doctors = await doctorsCollection.find(query).toArray();
             console.log(doctors);
             res.send(doctors);
         })
 
-        app.post('/doctors',verifyJWT,verifyAdmin,  async (req, res) => {
+        app.post('/doctors',  async (req, res) => {
             const doctor = req.body;
             const result = await doctorsCollection.insertOne(doctor);
             res.send(result);
         });
 
-        app.delete('/doctors/:id',verifyJWT,verifyAdmin, async (req, res) => {
+        app.delete('/doctors/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await doctorsCollection.deleteOne(filter);
